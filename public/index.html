@@ -1,0 +1,92 @@
+<!DOCTYPE html>
+<html lang="hi">
+<head>
+<meta charset="UTF-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1.0" />
+<title>Creator Desk</title>
+<style>
+  body { margin:0; font-family: sans-serif; background:#0f1115; color:#eef0f4; }
+  header { padding: 24px; border-bottom:1px solid #2a2f3a; }
+  header h1 { margin:0; font-size:22px; } header h1 span{ color:#ff3b30; }
+  .tabs { display:flex; gap:8px; padding:16px 24px 0; flex-wrap:wrap; }
+  .tab { padding:10px 16px; border-radius:8px; background:#171a21; border:1px solid #2a2f3a; color:#8b90a0; cursor:pointer; }
+  .tab.active { background:#ff3b30; color:white; }
+  main { padding:20px 24px 60px; max-width:760px; margin:0 auto; }
+  .panel { background:#171a21; border:1px solid #2a2f3a; border-radius:12px; padding:20px; display:none; }
+  .panel.active { display:block; }
+  label { display:block; font-size:13px; color:#8b90a0; margin:14px 0 6px; }
+  input, textarea, select { width:100%; padding:10px 12px; border-radius:8px; border:1px solid #2a2f3a; background:#1e222b; color:#eef0f4; box-sizing:border-box; }
+  textarea { min-height:110px; }
+  button.generate { margin-top:18px; width:100%; padding:13px; border:none; border-radius:8px; background:#ff3b30; color:white; font-size:15px; font-weight:600; }
+  .result { margin-top:18px; padding:16px; background:#1e222b; border-radius:8px; border-left:3px solid #ffb020; white-space:pre-wrap; display:none; }
+  .error { margin-top:12px; color:#ff3b30; display:none; }
+  .loader { display:none; margin-top:14px; color:#8b90a0; }
+</style>
+</head>
+<body>
+<header><h1>Creator<span>Desk</span></h1></header>
+<div class="tabs">
+  <div class="tab active" data-panel="script">Script</div>
+  <div class="tab" data-panel="title">Titles</div>
+  <div class="tab" data-panel="seo">SEO</div>
+  <div class="tab" data-panel="editing">Editing</div>
+</div>
+<main>
+  <div class="panel active" id="panel-script">
+    <label>Video ka topic</label><input id="script-topic" />
+    <label>Video duration</label><input id="script-duration" />
+    <label>Language</label>
+    <select id="script-language"><option value="Hindi/Hinglish">Hindi/Hinglish</option><option value="English">English</option></select>
+    <button class="generate" data-agent="script">Script Banao</button>
+    <div class="loader">Generate ho raha hai...</div><div class="error"></div><div class="result"></div>
+  </div>
+  <div class="panel" id="panel-title">
+    <label>Video ka topic</label><input id="title-topic" />
+    <button class="generate" data-agent="title">Titles Banao</button>
+    <div class="loader">Generate ho raha hai...</div><div class="error"></div><div class="result"></div>
+  </div>
+  <div class="panel" id="panel-seo">
+    <label>Video ka topic</label><input id="seo-topic" />
+    <button class="generate" data-agent="seo">SEO Banao</button>
+    <div class="loader">Generate ho raha hai...</div><div class="error"></div><div class="result"></div>
+  </div>
+  <div class="panel" id="panel-editing">
+    <label>Script paste karo</label><textarea id="editing-script"></textarea>
+    <button class="generate" data-agent="editing">Editing Plan Banao</button>
+    <div class="loader">Generate ho raha hai...</div><div class="error"></div><div class="result"></div>
+  </div>
+</main>
+<script>
+document.querySelectorAll(".tab").forEach(tab => {
+  tab.addEventListener("click", () => {
+    document.querySelectorAll(".tab").forEach(t => t.classList.remove("active"));
+    document.querySelectorAll(".panel").forEach(p => p.classList.remove("active"));
+    tab.classList.add("active");
+    document.getElementById("panel-" + tab.dataset.panel).classList.add("active");
+  });
+});
+document.querySelectorAll(".generate").forEach(btn => {
+  btn.addEventListener("click", async () => {
+    const agent = btn.dataset.agent;
+    const panel = document.getElementById("panel-" + agent);
+    const loader = panel.querySelector(".loader");
+    const errorBox = panel.querySelector(".error");
+    const resultBox = panel.querySelector(".result");
+    let payload = {};
+    if (agent === "script") payload = { topic: document.getElementById("script-topic").value, duration: document.getElementById("script-duration").value, language: document.getElementById("script-language").value };
+    else if (agent === "title") payload = { topic: document.getElementById("title-topic").value };
+    else if (agent === "seo") payload = { topic: document.getElementById("seo-topic").value };
+    else if (agent === "editing") payload = { script: document.getElementById("editing-script").value };
+    errorBox.style.display = "none"; resultBox.style.display = "none"; loader.style.display = "block"; btn.disabled = true;
+    try {
+      const res = await fetch("/api/" + agent, { method:"POST", headers:{ "Content-Type":"application/json" }, body: JSON.stringify(payload) });
+      const data = await res.json();
+      if (data.success) { resultBox.textContent = data.result; resultBox.style.display = "block"; }
+      else { errorBox.textContent = "Error: " + data.error; errorBox.style.display = "block"; }
+    } catch (err) { errorBox.textContent = "Kuch gadbad hui: " + err.message; errorBox.style.display = "block"; }
+    finally { loader.style.display = "none"; btn.disabled = false; }
+  });
+});
+</script>
+</body>
+</html>
